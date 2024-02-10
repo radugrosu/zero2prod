@@ -1,5 +1,12 @@
 use std::net::TcpListener;
 
+use actix_web::{HttpResponse, Responder};
+
+use crate::startup;
+
+pub async fn health_check() -> impl Responder {
+    HttpResponse::Ok()
+}
 // You can inspect what code gets generated using
 // `cargo expand --test health_check` (<- name of the test file)
 #[tokio::test]
@@ -21,7 +28,7 @@ fn spawn_app() -> String {
     // Launch the server as a background task
     // tokio::spawn returns a handle to the spawned future,
     // but we have no use for it here, hence the non-binding let
-    let server = zero2prod::run(listener).expect("Failed to bind address");
+    let server = startup::run(listener).expect("Failed to bind address");
     let _ = tokio::spawn(server);
     format!("http://127.0.0.1:{}", port)
 }
