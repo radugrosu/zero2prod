@@ -4,12 +4,12 @@ use actix_web::{HttpResponse, Responder};
 
 use crate::configuration::get_configuration;
 use crate::startup;
-use sqlx::{Connection, PgConnection};
+use sqlx::PgPool;
 
-async fn get_connection() -> PgConnection {
+async fn get_connection() -> PgPool {
     let configuration = get_configuration().expect("Failed to read configuration");
     let connection_string = configuration.database.connection_string();
-    PgConnection::connect(&connection_string)
+    PgPool::connect(&connection_string)
         .await
         .expect("Failed to connect to Postgres.")
 }
@@ -60,9 +60,9 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
         .await
         .expect("Failed to execute request.");
     assert_eq!(200, response.status().as_u16());
-    let mut connection = get_connection().await;
+    let connection = get_connection().await;
     let saved = sqlx::query!("SELECT email, name FROM subscriptions")
-        .fetch_one(&mut connection)
+        .fetch_one(&connection)
         .await
         .expect("Failed to fetch saved subscription.");
     assert_eq!(saved.email, "ursula_le_guin@gmail.com");
