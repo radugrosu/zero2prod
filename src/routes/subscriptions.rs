@@ -5,6 +5,9 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 pub async fn subscribe(form: web::Form<FormData>, connection: web::Data<PgPool>) -> HttpResponse {
+    let request_id = Uuid::new_v4();
+    let log_prefix = format!("request_id {} - ", request_id);
+    log::info!("{}Adding '{}' '{}' as a new subscriber", log_prefix, form.email, form.name);
     match sqlx::query!(
         r#"
     INSERT INTO subscriptions (id, email, name, subscribed_at) 
@@ -19,9 +22,12 @@ pub async fn subscribe(form: web::Form<FormData>, connection: web::Data<PgPool>)
     .execute(connection.get_ref())
     .await
     {
-        Ok(_) => HttpResponse::Ok().finish(),
+        Ok(_) => {
+            log::info!("{}Saved new subscriber details in the database", log_prefix);
+            HttpResponse::Ok().finish()
+        },
         Err(e) => {
-            eprintln!("Failed to execute query: {:?}", e);
+            log::error!("{}Failed to execute query: {:?}", log_prefix, e);
             HttpResponse::InternalServerError().finish()
         }
     }
