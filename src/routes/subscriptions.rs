@@ -5,15 +5,17 @@ use sqlx::PgPool;
 use tracing::Instrument;
 use uuid::Uuid;
 
-pub async fn subscribe(form: web::Form<FormData>, connection: web::Data<PgPool>) -> HttpResponse {
-    let request_id = Uuid::new_v4();
-    let request_span =
-        tracing::info_span!("Adding a new subscriber", %request_id, %form.email, %form.name);
-    tracing::info!("{} - Adding a new subscriber", request_id);
-    let _request_span_guard = request_span.enter();
 
-    let query_span = tracing::info_span!("Saving new subscriber details in the database");
-    match sqlx::query!(
+#[tracing::instrument(
+    name = "Adding a new subscriber",
+    skip(form, pool),
+)]
+pub async fn insert_subscriber(
+    pool: &PgPool,
+    form: &FormData,
+) ->  Result<(), sqlx::Error>{
+
+    sqlx::query!(
         r#"
     INSERT INTO subscriptions (id, email, name, subscribed_at) 
     VALUES ($1, $2, $3, $4)
@@ -24,21 +26,23 @@ pub async fn subscribe(form: web::Form<FormData>, connection: web::Data<PgPool>)
         Utc::now()
     )
     // We use `get_ref` to get an immutable reference to the `PgConnection` wrapped by `web::Data`.
-    .execute(connection.get_ref())
-    .instrument(query_span)
+    .execute(pool)
     .await
-    {
-        Ok(_) => {
-            tracing::info!(
-                "{} - Saved new subscriber details in the database",
-                request_id
-            );
-            HttpResponse::Ok().finish()
-        }
-        Err(e) => {
-            tracing::error!("{} - Failed to execute query: {:?}", request_id, e);
-            HttpResponse::InternalServerError().finish()
-        }
+    .map_err(|e| {
+            tracing::error!("Failed to execute query: {:?}", e);
+            e
+    })?;
+    Ok(())
+}
+#[tracing::instrument( 
+    name = "Adding a new subscriber", 
+    skip(form, pool),
+    fields( request_id = %Uuid::new_v4(), subscriber_email = %form.email, subscriber_name = %form.name )
+)]
+pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> HttpResponse {
+    match insert_subscriber(&pool, &form).await {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
@@ -47,4 +51,3 @@ pub struct FormData {
     email: String,
     name: String,
 }
-
