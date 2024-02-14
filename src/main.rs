@@ -1,4 +1,3 @@
-use secrecy::ExposeSecret;
 use sqlx::PgPool;
 use std::net::TcpListener;
 use zero2prod::{
@@ -13,9 +12,7 @@ async fn main() -> Result<(), std::io::Error> {
     init_subscriber(subscriber);
     // `set_global_default` can be used by applications to specify what subscriber should be used to process spans.
     let configuration = get_configuration().expect("Failed to read configuration.");
-    let connection_pool =
-        PgPool::connect_lazy(&configuration.database.connection_string().expose_secret())
-            .expect("Failed to connect to Postgres connection pool.");
+    let connection_pool = PgPool::connect_lazy_with(configuration.database.with_db());
     let address = format!(
         "{}:{}",
         configuration.application.host, configuration.application.port
