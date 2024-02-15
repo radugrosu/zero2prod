@@ -1,10 +1,22 @@
 use reqwest::Client;
+use secrecy::{ExposeSecret, Secret};
 
 use crate::domain::SubscriberEmail;
+
+#[derive(serde::Serialize)]
+struct SendEmailRequest {
+    from: String,
+    to: String,
+    subject: String,
+    html_body: String,
+    text_body: String,
+}
+
 pub struct EmailClient {
     http_client: Client,
-    base_url: String,
+    base_url: reqwest::Url,
     sender: SubscriberEmail,
+    authorization_token: Secret<String>,
 }
 impl EmailClient {
     pub async fn send_email(
@@ -14,13 +26,36 @@ impl EmailClient {
         html_content: &str,
         text_content: &str,
     ) -> Result<(), String> {
+        let url = reqwest::Url::join(&self.base_url, "email").map_err(|e| e.to_string())?;
+        let request_body = SendEmailRequest {
+            from: self.sender.as_ref().to_owned(),
+            to: recipient.as_ref().to_owned(),
+            subject: subject.to_owned(),
+            html_body: html_content.to_owned(),
+            text_body: text_content.to_owned(),
+        };
+        self.http_client
+            .post(url)
+            .header(
+                "X-Postmark-Server-Token",
+                self.authorization_token.expose_secret(),
+            )
+            .json(&request_body)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
         Ok(())
     }
-    pub fn new(base_url: String, sender: SubscriberEmail) -> Self {
+    pub fn new(
+        base_url: reqwest::Url,
+        sender: SubscriberEmail,
+        authorization_token: Secret<String>,
+    ) -> Self {
         Self {
             http_client: Client::new(),
             base_url,
             sender,
+            authorization_token,
         }
     }
 }
@@ -32,14 +67,15 @@ mod tests {
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::lorem::en::{Paragraph, Sentence};
     use fake::{Fake, Faker};
-    use tracing::subscriber;
+    use secrecy::Secret;
     use wiremock::matchers::any;
     use wiremock::{Mock, MockServer, ResponseTemplate};
     #[tokio::test]
     async fn send_email_fires_a_request_to_base_url() {
         let mock_server = MockServer::start().await;
         let sender = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
-        let email_client = EmailClient::new(mock_server.uri(), sender);
+        let uri = reqwest::Url::parse(&mock_server.uri()).expect("Failed to parse URL");
+        let email_client = EmailClient::new(uri, sender, Secret::new(Faker.fake()));
 
         Mock::given(any())
             .respond_with(ResponseTemplate::new(200))

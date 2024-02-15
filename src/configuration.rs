@@ -16,14 +16,20 @@ pub struct Settings {
 
 #[derive(serde::Deserialize)]
 pub struct EmailClientSettings {
-    pub base_url: String,
-    pub sender_email: String,
+    base_url: String,
+    sender_email: String,
+    pub authorization_token: Secret<String>
 }
 impl EmailClientSettings {
     pub fn sender(&self) -> Result<SubscriberEmail, String> {
         SubscriberEmail::parse(self.sender_email.clone())
     }
+
+    pub fn base_url(&self) -> Result<reqwest::Url, String> {
+        reqwest::Url::parse(self.base_url.as_str()).map_err(|e| e.to_string())
+    }
 }
+
 
 #[derive(serde::Deserialize)]
 pub struct ApplicationSettings {
