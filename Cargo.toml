@@ -24,6 +24,12 @@ tracing-actix-web = "0.7"
 unicode-segmentation = "1"
 validator = "0.16"
 
+[dependencies.reqwest]
+version = "0.11"
+default-features = false
+# We need the `json` feature flag to serialize/deserialize JSON payloads 
+features = ["json", "rustls-tls"]
+
 [dependencies.sqlx]
 version = "0.7"
 default-features = false
@@ -38,12 +44,13 @@ features = [
 
 [dev-dependencies]
 once_cell = "1"
-reqwest = "0.11"
 claims = "0.7"
 fake = "2.9"
 quickcheck = "~1.0"
 quickcheck_macros = "~1.0"
 rand = "0.8.5"
+tokio = { version = "1", features = ["macros", "rt"] }
+wiremock = "0.5"
 
 [[bin]]
 path = "src/main.rs"
