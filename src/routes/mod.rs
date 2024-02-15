@@ -1,4 +1,4 @@
-mod subscriptions;
 mod health_check;
-pub use subscriptions::*;
+mod subscriptions;
 pub use health_check::*;
+pub use subscriptions::*;
