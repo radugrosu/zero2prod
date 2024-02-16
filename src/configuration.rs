@@ -18,7 +18,8 @@ pub struct Settings {
 pub struct EmailClientSettings {
     base_url: String,
     sender_email: String,
-    pub authorization_token: Secret<String>
+    pub authorization_token: Secret<String>,
+    pub timeout_milliseconds: u64,
 }
 impl EmailClientSettings {
     pub fn sender(&self) -> Result<SubscriberEmail, String> {
@@ -28,8 +29,10 @@ impl EmailClientSettings {
     pub fn base_url(&self) -> Result<reqwest::Url, String> {
         reqwest::Url::parse(self.base_url.as_str()).map_err(|e| e.to_string())
     }
+    pub fn timeout(&self) -> std::time::Duration {
+        std::time::Duration::from_millis(self.timeout_milliseconds)
+    }
 }
-
 
 #[derive(serde::Deserialize)]
 pub struct ApplicationSettings {

@@ -65,11 +65,9 @@ impl EmailClient {
         base_url: reqwest::Url,
         sender: SubscriberEmail,
         authorization_token: Secret<String>,
+        timeout: std::time::Duration,
     ) -> Self {
-        let http_client = Client::builder()
-            .timeout(std::time::Duration::from_secs(10))
-            .build()
-            .unwrap();
+        let http_client = Client::builder().timeout(timeout).build().unwrap();
         Self {
             http_client,
             base_url,
@@ -108,7 +106,12 @@ mod tests {
 
     fn email_client(base_url: String) -> EmailClient {
         let uri = Url::parse(&base_url).expect("Failed to parse URL");
-        EmailClient::new(uri, email(), Secret::new(Faker.fake()))
+        EmailClient::new(
+            uri,
+            email(),
+            Secret::new(Faker.fake()),
+            std::time::Duration::from_millis(200),
+        )
     }
 
     #[tokio::test]
