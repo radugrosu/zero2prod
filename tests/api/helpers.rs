@@ -2,6 +2,7 @@ use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use startup::get_connection_pool;
 use uuid::Uuid;
+use wiremock::MockServer;
 use zero2prod::{
     configuration::{get_configuration, DatabaseSettings},
     startup::{self, Application},
@@ -11,6 +12,7 @@ use zero2prod::{
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
+    pub email_server: MockServer,
 }
 
 impl TestApp {
@@ -49,6 +51,7 @@ pub async fn spawn_app() -> TestApp {
     // All other invocations will instead skip execution.
     Lazy::force(&TRACING);
 
+    let email_server = MockServer::start().await;
     let configuration = {
         // randomize configuration to ensure test isolation
         let mut c = get_configuration().expect("Failed to read configuration");
@@ -56,6 +59,8 @@ pub async fn spawn_app() -> TestApp {
         c.database.database_name = Uuid::new_v4().to_string();
         // Use a random OS port
         c.application.port = 0;
+        // Use the mock server as email API
+        c.email_client.set_base_url(email_server.uri());
         c
     };
     // Create and migrate the database
@@ -65,9 +70,16 @@ pub async fn spawn_app() -> TestApp {
         .await
         .expect("Failed to build application.");
     let address = format!("http://127.0.0.1:{}", app.port());
-    let db_pool = get_connection_pool(&configuration.database);
+
     let _ = tokio::spawn(app.run_until_stopped());
-    TestApp { address, db_pool }
+
+    let db_pool = get_connection_pool(&configuration.database);
+    // Launch a mock server to stand in for Postmark's API
+    TestApp {
+        address,
+        db_pool,
+        email_server,
+    }
 }
 
 async fn configure_database(config: &DatabaseSettings) -> PgPool {

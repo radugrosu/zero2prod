@@ -27,6 +27,10 @@ impl EmailClientSettings {
     pub fn base_url(&self) -> Result<reqwest::Url, String> {
         reqwest::Url::parse(self.base_url.as_str()).map_err(|e| e.to_string())
     }
+    pub fn set_base_url(&mut self, base_url: String) {
+        self.base_url = base_url
+    }
+
     pub fn timeout(&self) -> std::time::Duration {
         std::time::Duration::from_millis(self.timeout_milliseconds)
     }
