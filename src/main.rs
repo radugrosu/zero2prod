@@ -1,37 +1,13 @@
-use sqlx::PgPool;
-use std::net::TcpListener;
-use zero2prod::{
-    configuration::get_configuration,
-    email_client::EmailClient,
-    startup::run,
-    telemetry::{get_subscriber, init_subscriber},
-};
+use zero2prod::configuration::get_configuration;
+use zero2prod::startup::Application;
+use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     let subscriber = get_subscriber("zero2prod".into(), "info".into(), std::io::stdout);
     init_subscriber(subscriber);
-    // `set_global_default` can be used by applications to specify what subscriber should be used to process spans.
     let configuration = get_configuration().expect("Failed to read configuration.");
-    let connection_pool = PgPool::connect_lazy_with(configuration.database.with_db());
-    let address = format!(
-        "{}:{}",
-        configuration.application.host, configuration.application.port
-    );
-    let listener = TcpListener::bind(address)?;
-    let sender_email = configuration
-        .email_client
-        .sender()
-        .expect("Invalid sender email address.");
-    let timeout = configuration.email_client.timeout();
-    let email_client = EmailClient::new(
-        configuration
-            .email_client
-            .base_url()
-            .expect("Invalid base url"),
-        sender_email,
-        configuration.email_client.authorization_token,
-        timeout,
-    );
-    run(listener, connection_pool, email_client)?.await
+    let app = Application::build(configuration).await?;
+    app.run_until_stopped().await?;
+    Ok(())
 }
