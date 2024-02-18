@@ -3,7 +3,6 @@ name: zero2prod
 # for a list of all the available options.
 # You can get region slugs from
 # https://www.digitalocean.com/docs/platform/availability-matrix/
-# They must specified lowercased. # `fra` stands for Frankfurt (Germany - EU)
 region: lon1
 services:
   - name: zero2prod
@@ -25,6 +24,10 @@ services:
     routes:
       - path: /
     envs:
+      - key: APP_APPLICATION__BASE_URL
+        scope: RUN_TIME
+        # We inject DO's APP_URL as the base URL
+        value: ${APP_URL}
       - key: APP_DATABASE__USERNAME
         scope: RUN_TIME
         value: ${newsletter.USERNAME}

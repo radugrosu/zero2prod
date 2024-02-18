@@ -6,6 +6,7 @@ use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use serde::Deserialize;
 use sqlx::PgPool;
+use url::Url;
 use uuid::Uuid;
 
 impl TryFrom<FormData> for NewSubscriber {
@@ -25,7 +26,7 @@ pub async fn insert_subscriber(
     sqlx::query!(
         r#"
     INSERT INTO subscriptions (id, email, name, subscribed_at, status) 
-    VALUES ($1, $2, $3, $4, 'confirmed')
+    VALUES ($1, $2, $3, $4, 'pending_confirmation')
     "#,
         Uuid::new_v4(),
         new_subscriber.email.as_ref(),
@@ -44,7 +45,7 @@ pub async fn insert_subscriber(
 
 #[tracing::instrument(
     name = "Adding a new subscriber", 
-    skip(form, pool, email_client),
+    skip(form, pool, email_client, base_url),
     fields(
         subscriber_email = %form.email,
         subscriber_name = %form.name,
@@ -54,6 +55,7 @@ pub async fn subscribe(
     form: web::Form<FormData>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
+    base_url: web::Data<Url>,
 ) -> HttpResponse {
     let new_subscriber = match form.0.try_into() {
         Ok(subscriber) => subscriber,
@@ -62,7 +64,7 @@ pub async fn subscribe(
     if insert_subscriber(&pool, &new_subscriber).await.is_err() {
         return HttpResponse::InternalServerError().finish();
     }
-    if send_confirmation_email(&email_client, new_subscriber)
+    if send_confirmation_email(&email_client, new_subscriber, &base_url)
         .await
         .is_err()
     {
@@ -78,8 +80,14 @@ pub async fn subscribe(
 async fn send_confirmation_email(
     email_client: &EmailClient,
     new_subscriber: NewSubscriber,
+    base_url: &Url,
 ) -> Result<(), EmailError> {
-    let confirmation_link = "https://there-is-no-such-domain.com/subscriptions/confirm";
+    let confirmation_link = Url::join(
+        base_url,
+        "subscriptions/confirm?subscription_token=my_token",
+    )
+    .expect("Failed to construct confirmation link");
+    let confirmation_link = confirmation_link.as_str();
     let plain_body = format!(
         "Welcome to our newsletter!\nVisit {} to confirm your subscription.",
         confirmation_link
