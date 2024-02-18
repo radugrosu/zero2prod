@@ -5,10 +5,10 @@ use crate::email_client::EmailClient;
 use crate::routes::{confirm, health_check, subscribe};
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
+use reqwest::Url;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use tracing_actix_web::TracingLogger;
-use url::Url;
 
 pub fn get_connection_pool(configuration: &DatabaseSettings) -> PgPool {
     PgPoolOptions::new().connect_lazy_with(configuration.with_db())

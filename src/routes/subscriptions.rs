@@ -4,9 +4,9 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
+use reqwest::Url;
 use serde::Deserialize;
 use sqlx::PgPool;
-use url::Url;
 use uuid::Uuid;
 
 impl TryFrom<FormData> for NewSubscriber {
