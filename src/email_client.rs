@@ -1,7 +1,6 @@
-use crate::domain::SubscriberEmail;
+use crate::{domain::SubscriberEmail, routes::SubscribeError};
 use reqwest::{Client, Url};
 use secrecy::{ExposeSecret, Secret};
-use url;
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
@@ -11,20 +10,6 @@ struct SendEmailRequest<'a> {
     subject: &'a str,
     html_body: &'a str,
     text_body: &'a str,
-}
-
-#[derive(Debug)]
-pub struct EmailError(String);
-
-impl From<url::ParseError> for EmailError {
-    fn from(source: url::ParseError) -> Self {
-        Self(source.to_string())
-    }
-}
-impl From<reqwest::Error> for EmailError {
-    fn from(source: reqwest::Error) -> Self {
-        Self(source.to_string())
-    }
 }
 
 pub struct EmailClient {
@@ -40,7 +25,7 @@ impl EmailClient {
         subject: &str,
         html_content: &str,
         text_content: &str,
-    ) -> Result<(), EmailError> {
+    ) -> Result<(), SubscribeError> {
         let url = Url::join(&self.base_url, "email")?;
         let request_body = SendEmailRequest {
             from: self.sender.as_ref(),
