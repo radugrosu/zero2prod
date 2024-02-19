@@ -3,7 +3,7 @@ name: zero2prod
 # for a list of all the available options.
 # You can get region slugs from
 # https://www.digitalocean.com/docs/platform/availability-matrix/
-region: lon1
+region: lon
 services:
   - name: zero2prod
     # Relative to the repository root
@@ -26,7 +26,6 @@ services:
     envs:
       - key: APP_APPLICATION__BASE_URL
         scope: RUN_TIME
-        # We inject DO's APP_URL as the base URL
         value: ${APP_URL}
       - key: APP_DATABASE__USERNAME
         scope: RUN_TIME
