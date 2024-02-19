@@ -67,8 +67,13 @@ impl ResponseError for SubscribeError {
 
 impl std::error::Error for SubscribeError {}
 
-#[derive(Debug)]
 pub struct StoreTokenError(sqlx::Error);
+
+impl std::fmt::Debug for StoreTokenError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Caused by:\n\t{}\n", self.0)
+    }
+}
 
 impl std::fmt::Display for StoreTokenError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
