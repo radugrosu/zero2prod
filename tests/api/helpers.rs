@@ -52,6 +52,14 @@ impl TestApp {
         let plain_text = get_link(&body["TextBody"].as_str().unwrap());
         ConfirmationLinks { html, plain_text }
     }
+    pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(&format!("{}/newsletter", &self.address))
+            .json(&body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
 }
 
 // Ensure that the `tracing` stack is only initialised once using `once_cell`
