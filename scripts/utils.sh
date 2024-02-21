@@ -28,3 +28,6 @@ sqlx database reset
 
 # dropping database in case of 'being used by other users' error
 sqlx database drop --force
+
+# check timings
+TEST_LOG=true cargo test --quiet --release newsletters_are_delivered | grep "VERIFY PASSWORD" | bunyan

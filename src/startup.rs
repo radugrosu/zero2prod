@@ -1,6 +1,7 @@
 use std::net::TcpListener;
 
 use crate::configuration::{DatabaseSettings, Settings};
+use crate::domain::home;
 use crate::email_client::EmailClient;
 use crate::routes::{confirm, health_check, publish_newsletter, subscribe};
 use actix_web::dev::Server;
@@ -69,6 +70,7 @@ pub fn run(
             .route("/subscriptions", web::post().to(subscribe))
             .route("/subscriptions/confirm", web::get().to(confirm))
             .route("/newsletter", web::post().to(publish_newsletter))
+            .route("/", web::get().to(home))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
