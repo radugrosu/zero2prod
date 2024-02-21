@@ -86,7 +86,7 @@ mod tests {
     }
     /// Generate a random subscriber email
     fn email() -> SubscriberEmail {
-       SubscriberEmail::parse(SafeEmail().fake()).unwrap()
+        SubscriberEmail::parse(SafeEmail().fake()).unwrap()
     }
 
     fn email_client(base_url: String) -> EmailClient {

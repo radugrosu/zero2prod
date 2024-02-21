@@ -53,12 +53,21 @@ impl TestApp {
         ConfirmationLinks { html, plain_text }
     }
     pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
+        let (username, password) = self.test_user().await;
         reqwest::Client::new()
             .post(&format!("{}/newsletter", &self.address))
+            .basic_auth(username, Some(password))
             .json(&body)
             .send()
             .await
             .expect("Failed to execute request.")
+    }
+    pub async fn test_user(&self) -> (String, String) {
+        let row = sqlx::query!("SELECT username, password FROM users LIMIT 1")
+            .fetch_one(&self.db_pool)
+            .await
+            .expect("Failed to create test users.");
+        (row.username, row.password)
     }
 }
 
@@ -111,12 +120,29 @@ pub async fn spawn_app() -> TestApp {
 
     let db_pool = get_connection_pool(&configuration.database);
     // Launch a mock server to stand in for Postmark's API
-    TestApp {
+    let mut test_app = TestApp {
         port,
         address,
         db_pool,
         email_server,
-    }
+    };
+    add_test_user(&test_app.db_pool).await;
+    test_app
+}
+
+async fn add_test_user(db_pool: &sqlx::Pool<sqlx::Postgres>) {
+    sqlx::query!(
+        r#"
+        INSERT INTO users (user_id, username, password)
+        VALUES ($1, $2, $3)
+        "#,
+        Uuid::new_v4(),
+        Uuid::new_v4().to_string(),
+        Uuid::new_v4().to_string(),
+    )
+    .execute(db_pool)
+    .await
+    .expect("Failed to insert test user.");
 }
 
 async fn configure_database(config: &DatabaseSettings) -> PgPool {

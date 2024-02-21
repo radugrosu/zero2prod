@@ -1,4 +1,3 @@
--- Add migration script here
 -- migrations/{timestamp}_create_subscriptions_table.sql 
 -- Create Subscriptions Table 
 CREATE TABLE subscriptions(
