@@ -1,13 +1,16 @@
-application: 
+application:
   port: 8000
+  # You need to set the `APP_APPLICATION__HMAC_SECRET` environment variable on Digital Ocean as well
+  hmac_secret: "long-and-very-secret-random-key-needed-to-verify-message-integrity"
 database:
   host: "localhost"
   port: 5432
   username: "postgres"
   password: "password"
   database_name: "newsletter"
-email_client: 
-  base_url: "http://localhost" 
+email_client:
+  base_url: "http://localhost"
   sender_email: "test@gmail.com"
   authorization_token: "test-token"
   timeout_milliseconds: 10000
+redis_uri: "redis://127.0.0.1:6379"
