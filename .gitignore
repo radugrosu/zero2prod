@@ -2,3 +2,4 @@
 .token
 cmd
 .remote_env
+.vscode
