@@ -4,7 +4,7 @@ use actix_web::{web, HttpResponse, ResponseError};
 use actix_web_flash_messages::FlashMessage;
 use secrecy::Secret;
 
-use crate::authentication::{validate_credentials, AuthError, Credentials};
+use crate::authentication::password::{validate_credentials, AuthError, Credentials};
 use crate::routes::error_chain_fmt;
 use actix_web::error::InternalError;
 
